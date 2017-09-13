@@ -29,6 +29,7 @@ dependencies {
     compile "org.http4k:http4k-core:2.24.0"
     compile "org.http4k:http4k-server-jetty:2.24.0"
     compile "org.http4k:http4k-client-apache:2.24.0"
+    compile "org.http4k:http4k-format-gson:2.24.0"
 }
 
 sourceSets {
