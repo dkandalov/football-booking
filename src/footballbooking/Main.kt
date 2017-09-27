@@ -80,7 +80,7 @@ fun main(args: Array<String>) {
     val bookSlotLens = Body.auto<BookSlot>().toLens()
 
     val signInRequest = Request(POST, "/Services/Commercial/api/security/validatelogin.json")
-        .with(loginLens of Login("anuratransfersdev2@gmail.com", "Anura123"))
+        .with(loginLens of Login(System.getProperty("EMAIL"), System.getProperty("PASSWORD")))
     httpClient(signInRequest)
 
     val addBookingPageRequest = Request(GET, "/tools/commercial/muga/addsinglebooking.aspx")
