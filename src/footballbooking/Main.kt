@@ -1,16 +1,24 @@
 package footballbooking
 
 import org.http4k.client.ApacheClient
-import org.http4k.core.*
-import org.http4k.core.Method.*
-import org.http4k.format.Gson.auto
+import org.http4k.core.Body
+import org.http4k.core.Filter
+import org.http4k.core.HttpHandler
+import org.http4k.core.Method.GET
+import org.http4k.core.Method.POST
+import org.http4k.core.Request
+import org.http4k.core.Uri
 import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.cookies
+import org.http4k.core.then
 import org.http4k.filter.ClientFilters
 import org.http4k.filter.DebuggingFilters
+import org.http4k.filter.TrafficFilters
 import org.http4k.filter.cookie.BasicCookieStorage
 import org.http4k.filter.cookie.CookieStorage
 import org.http4k.filter.cookie.LocalCookie
+import org.http4k.format.Gson.auto
+import org.http4k.traffic.ReadWriteCache
 import java.time.Clock
 import java.time.LocalDateTime
 
@@ -24,41 +32,44 @@ fun main(args: Array<String>) {
     // username: anuratransfersdev2@gmail.com
     // password: ...
 
+    val cache = ReadWriteCache.Disk("./traffic")
     val httpClient: HttpHandler =
-        ClientFilters.SetHostFrom(Uri.of("https://hsp.kingscross.co.uk"))
+        TrafficFilters.ServeCachedFrom(cache)
+            .then(TrafficFilters.RecordTo(cache))
+            .then(ClientFilters.SetHostFrom(Uri.of("https://hsp.kingscross.co.uk")))
             .then(Cookies())
             .then(DebuggingFilters.PrintRequestAndResponse())
             .then(ApacheClient())
 
     val homePageRequest = Request(GET, "/")
-    httpClient.invoke(homePageRequest)
+    httpClient(homePageRequest)
 
     val loginPageRequest = Request(GET, "/Accounts/Login.aspx")
-    httpClient.invoke(loginPageRequest)
+    httpClient(loginPageRequest)
 
     val signInRequest = Request(POST, "/Services/Commercial/api/security/validatelogin.json")
-        .body("{Email: \"anuratransfersdev2@gmail.com\", Password: \"...\", PersistCookie: false}")
-    httpClient.invoke(signInRequest)
+        .body("{Email: \"anuratransfersdev2@gmail.com\", Password: \"\", PersistCookie: false}")
+    httpClient(signInRequest)
 
     val addBookingPageRequest = Request(GET, "/tools/commercial/muga/addsinglebooking.aspx")
-    httpClient.invoke(addBookingPageRequest)
+    httpClient(addBookingPageRequest)
 
     val footballGUID = "50ba1b7a-67f4-4c8d-a575-7dc8b5a43a30"
     val listSessionsRequest = Request(POST, "/Services/Commercial/api/muga/ListAvailableSessions.json")
-        .body("{BookingDate: \"2017-09-18T00:00:00.000Z\", ActivityTypeGuid: \"$footballGUID\"}")
-    val response = httpClient.invoke(listSessionsRequest)
+        .body("{BookingDate: \"2017-10-03T00:00:00.000Z\", ActivityTypeGuid: \"$footballGUID\"}")
+    val response = httpClient(listSessionsRequest)
 
     val bookingSessions = Body.auto<BookingSessions>().toLens().extract(response)
     val session = bookingSessions.Data.find { it.Availability == 0 }.printed()
     session ?: error("no session")
 
-    val bookSessionRequest = Request(POST, "https://hsp.kingscross.co.uk/Services/Commercial/api/muga/AddBooking.json")
-        .body("{" +
-            "\"ActivityTypeGuid\":\"$footballGUID\"," +
-            "\"SessionGuid\":\"${session.Guid}\"," +
-            "\"Date\":\"2017-09-18T00:00:00.000Z\"" +
-            "}")
-    httpClient.invoke(bookSessionRequest)
+//    val bookSessionRequest = Request(POST, "https://hsp.kingscross.co.uk/Services/Commercial/api/muga/AddBooking.json")
+//        .body("{" +
+//            "\"ActivityTypeGuid\":\"$footballGUID\"," +
+//            "\"SessionGuid\":\"${session.Guid}\"," +
+//            "\"Date\":\"2017-09-18T00:00:00.000Z\"" +
+//            "}")
+//    httpClient(bookSessionRequest)
 
     // relied with
     // {"Code":200,"Data":{"Guid":"65295e82-1373-43eb-bda3-31e0ac8e6635"}}
@@ -102,4 +113,4 @@ fun Request.cookie(name: String, value: String): Request = replaceHeader("Cookie
 
 private fun List<Cookie>.toCookieString() = map { "${it.name}=${it.value}" }.joinToString("; ")
 
-fun <T> T.printed(): T = this.apply { println(this) }
+fun <T : Any?> T.printed() = this?.run(::println)

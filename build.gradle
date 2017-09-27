@@ -22,14 +22,15 @@ group = "org.footballbooking"
 version = "0.0-SNAPSHOT"
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
+def http4kVersion = "2.29.1"
 
 dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib:1.1.4"
     compile "com.thoughtworks.xstream:xstream:1.4.9"
-    compile "org.http4k:http4k-core:2.24.0"
-    compile "org.http4k:http4k-server-jetty:2.24.0"
-    compile "org.http4k:http4k-client-apache:2.24.0"
-    compile "org.http4k:http4k-format-gson:2.24.0"
+    compile "org.http4k:http4k-core:$http4kVersion"
+    compile "org.http4k:http4k-server-jetty:$http4kVersion"
+    compile "org.http4k:http4k-client-apache:$http4kVersion"
+    compile "org.http4k:http4k-format-gson:$http4kVersion"
 }
 
 sourceSets {
