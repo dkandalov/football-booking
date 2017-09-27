@@ -35,7 +35,7 @@ data class ListSessions(val BookingDate: String, val ActivityTypeGuid: String)
 data class BookSlot(val ActivityTypeGuid: String, val SessionGuid: String, val Date: String)
 
 data class BookingSessions(val Code: Int, val Data: List<Slot>) {
-    fun findSlot() = Data.find { it.Availability == 0 }
+    fun findSlot() = Data.find { it.Availability == 0 && (it.StartDateTime.contains("T11:") || it.StartDateTime.contains("T12:")) }
 }
 
 data class Slot(
