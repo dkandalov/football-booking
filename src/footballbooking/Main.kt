@@ -21,7 +21,12 @@ import org.http4k.filter.cookie.LocalCookie
 import org.http4k.format.Gson.auto
 import org.http4k.traffic.ReadWriteCache
 import java.time.Clock
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.temporal.TemporalAdjusters
 
 data class Login(val Email: String, val Password: String, val PersistCookie: Boolean = true)
 
@@ -81,9 +86,13 @@ fun main(args: Array<String>) {
     val addBookingPageRequest = Request(GET, "/tools/commercial/muga/addsinglebooking.aspx")
     httpClient(addBookingPageRequest)
 
+    val nextThursday = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.THURSDAY))
+
+    val nextThursdayString = nextThursday.atStartOfDay(ZoneId.of("UTC")).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+
     val footballGUID = "50ba1b7a-67f4-4c8d-a575-7dc8b5a43a30"
     val listSessionsRequest = Request(POST, "/Services/Commercial/api/muga/ListAvailableSessions.json")
-        .with(listSessionsLens of ListSessions("2017-10-03T00:00:00.000Z", footballGUID))
+        .with(listSessionsLens of ListSessions(nextThursdayString, footballGUID))
     val response = httpClient(listSessionsRequest)
 
     val bookingSessions = bookingSessionsLens.extract(response)
