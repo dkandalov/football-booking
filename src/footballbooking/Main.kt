@@ -101,7 +101,7 @@ fun main(args: Array<String>) {
 
     val bookSessionRequest = Request(POST, "/Services/Commercial/api/muga/AddBooking.json")
         .with(bookSlotLens of session.book(footballGUID))
-//    httpClient(bookSessionRequest)
+    httpClient(bookSessionRequest).printed()
 
     // relied with
     // {"Code":200,"Data":{"Guid":"65295e82-1373-43eb-bda3-31e0ac8e6635"}}
