@@ -2,7 +2,7 @@
 ### Kotlin template
 # Compiled class file
 *.class
-
+traffic/
 # Log file
 *.log
 
