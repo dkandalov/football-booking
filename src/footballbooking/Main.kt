@@ -1,17 +1,11 @@
 package footballbooking
 
 import org.http4k.client.ApacheClient
-import org.http4k.core.Body
-import org.http4k.core.Filter
-import org.http4k.core.HttpHandler
+import org.http4k.core.*
 import org.http4k.core.Method.GET
 import org.http4k.core.Method.POST
-import org.http4k.core.Request
-import org.http4k.core.Uri
 import org.http4k.core.cookie.Cookie
 import org.http4k.core.cookie.cookies
-import org.http4k.core.then
-import org.http4k.core.with
 import org.http4k.filter.ClientFilters
 import org.http4k.filter.DebuggingFilters
 import org.http4k.filter.TrafficFilters
@@ -20,11 +14,7 @@ import org.http4k.filter.cookie.CookieStorage
 import org.http4k.filter.cookie.LocalCookie
 import org.http4k.format.Gson.auto
 import org.http4k.traffic.ReadWriteCache
-import java.time.Clock
-import java.time.DayOfWeek
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.ZoneId
+import java.time.*
 import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAdjusters
 
@@ -56,14 +46,15 @@ fun main(args: Array<String>) {
     // post to list sessions: https://hsp.kingscross.co.uk/Services/Commercial/api/muga/ListAvailableSessions.json
     // post to add booking: https://hsp.kingscross.co.uk/Services/Commercial/api/muga/AddBooking.json
 
-    // username: anuratransfersdev2@gmail.com
-    // password: ...
-
-    val cache = ReadWriteCache.Disk("./traffic")
-    val httpClient: HttpHandler =
-        TrafficFilters.ServeCachedFrom(cache)
+    fun cached(httpHandler: HttpHandler): HttpHandler {
+        val cache = ReadWriteCache.Disk("./traffic")
+        return TrafficFilters.ServeCachedFrom(cache)
             .then(TrafficFilters.RecordTo(cache))
-            .then(ClientFilters.SetHostFrom(Uri.of("https://hsp.kingscross.co.uk")))
+            .then(httpHandler)
+    }
+
+    val httpClient: HttpHandler =
+        ClientFilters.SetHostFrom(Uri.of("https://hsp.kingscross.co.uk"))
             .then(Cookies())
             .then(DebuggingFilters.PrintRequestAndResponse())
             .then(ApacheClient())
