@@ -94,13 +94,15 @@ fun main(args: Array<String>) {
         .with(bookSlotLens of session.book(footballGUID))
     httpClient(bookSessionRequest).printed()
 
-    // relied with
+    // replied with
     // {"Code":200,"Data":{"Guid":"65295e82-1373-43eb-bda3-31e0ac8e6635"}}
 }
 
 object Cookies {
-    operator fun invoke(clock: Clock = Clock.systemDefaultZone(),
-                        storage: CookieStorage = BasicCookieStorage()): Filter = Filter { next ->
+    operator fun invoke(
+        clock: Clock = Clock.systemDefaultZone(),
+        storage: CookieStorage = BasicCookieStorage()
+    ): Filter = Filter { next ->
         { request ->
             val now = clock.now()
             removeExpired(now, storage)
@@ -110,18 +112,22 @@ object Cookies {
         }
     }
 
-    private fun Request.withLocalCookies(storage: CookieStorage) = storage.retrieve()
-        .map { it.cookie }
-        .fold(this, { r, cookie -> r.cookie(cookie.name, cookie.value) })
+    private fun Request.withLocalCookies(storage: CookieStorage) =
+        storage.retrieve()
+            .map { it.cookie }
+            .fold(this, { r, cookie -> r.cookie(cookie.name, cookie.value) })
 
-    private fun removeExpired(now: LocalDateTime, storage: CookieStorage)
-        = storage.retrieve().filter { it.isExpired(now) }.forEach { storage.remove(it.cookie.name) }
+    private fun removeExpired(now: LocalDateTime, storage: CookieStorage) =
+        storage.retrieve()
+            .filter { it.isExpired(now) }
+            .forEach { storage.remove(it.cookie.name) }
 
     private fun Clock.now() = LocalDateTime.ofInstant(instant(), zone)
+
+    private fun Request.cookie(name: String, value: String): Request = replaceHeader("Cookie", cookies().plus(Cookie(name, value)).toCookieString())
+
+    private fun List<Cookie>.toCookieString() = map { "${it.name}=${it.value}" }.joinToString("; ")
 }
 
-fun Request.cookie(name: String, value: String): Request = replaceHeader("Cookie", cookies().plus(Cookie(name, value)).toCookieString())
 
-private fun List<Cookie>.toCookieString() = map { "${it.name}=${it.value}" }.joinToString("; ")
-
-fun <T : Any?> T.printed(): T? = this?.apply(::println)
+fun <T: Any?> T.printed(): T? = this?.apply(::println)
