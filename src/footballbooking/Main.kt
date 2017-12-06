@@ -42,6 +42,7 @@ data class Slot(
     fun book(guid: String) = BookSlot(guid, Guid, StartDateTime)
 }
 
+val websiteUri = Uri.of("https://hsp.kingscross.co.uk")
 val homePageRequest = Request(GET, "/")
 val loginPageRequest = Request(GET, "/Accounts/Login.aspx")
 val signInRequest = Request(POST, "/Services/Commercial/api/security/validatelogin.json")
@@ -58,24 +59,10 @@ val footballGUID = "50ba1b7a-67f4-4c8d-a575-7dc8b5a43a30"
 
 
 fun main(args: Array<String>) {
-    // home page: https://hsp.kingscross.co.uk
-    // login page: https://hsp.kingscross.co.uk/Accounts/Login.aspx
-    // booking page: https://hsp.kingscross.co.uk/tools/commercial/muga/addsinglebooking.aspx
-    // post to list sessions: https://hsp.kingscross.co.uk/Services/Commercial/api/muga/ListAvailableSessions.json
-    // post to add booking: https://hsp.kingscross.co.uk/Services/Commercial/api/muga/AddBooking.json
-
-    fun cached(httpHandler: HttpHandler): HttpHandler {
-        val cache = ReadWriteCache.Disk("./traffic")
-        return TrafficFilters.ServeCachedFrom(cache)
-            .then(TrafficFilters.RecordTo(cache))
-            .then(httpHandler)
-    }
-
-    val httpClient =
-        ClientFilters.SetHostFrom(Uri.of("https://hsp.kingscross.co.uk"))
-            .then(Cookies())
-            .then(DebuggingFilters.PrintRequestAndResponse())
-            .then(ApacheClient())
+    val httpClient = ClientFilters.SetHostFrom(websiteUri)
+        .then(Cookies())
+        .then(DebuggingFilters.PrintRequestAndResponse())
+        .then(ApacheClient())
 
     httpClient(homePageRequest)
     httpClient(loginPageRequest)
@@ -88,7 +75,7 @@ fun main(args: Array<String>) {
 
     val bookingSessions = bookingSessionsLens.extract(response)
     val session = bookingSessions.findSlot().printed()
-    session ?: error("no session")
+    session ?: return println("No sessions available for booking")
 
     httpClient(bookSessionRequest.with(bookSlotLens of session.book(footballGUID))).printed()
 
@@ -96,6 +83,17 @@ fun main(args: Array<String>) {
     // {"Code":200,"Data":{"Guid":"65295e82-1373-43eb-bda3-31e0ac8e6635"}}
 }
 
+fun cached(httpHandler: HttpHandler): HttpHandler {
+    val cache = ReadWriteCache.Disk("./traffic")
+    return TrafficFilters.ServeCachedFrom(cache)
+        .then(TrafficFilters.RecordTo(cache))
+        .then(httpHandler)
+}
+
+/**
+ * Needed this object because there was a problem with cookies in http4k
+ * and it seems it hasn't been fixed yet.
+ */
 object Cookies {
     operator fun invoke(
         clock: Clock = Clock.systemDefaultZone(),
