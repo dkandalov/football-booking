@@ -15,7 +15,7 @@ import org.http4k.filter.cookie.LocalCookie
 import org.http4k.format.Gson.auto
 import org.http4k.traffic.ReadWriteCache
 import java.time.Clock
-import java.time.DayOfWeek.TUESDAY
+import java.time.DayOfWeek.THURSDAY
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneOffset
@@ -82,9 +82,9 @@ fun main(args: Array<String>) {
     httpClient(signInRequest.with(loginLens of Login(System.getenv("EMAIL"), System.getenv("PASSWORD"))))
     httpClient(addBookingPageRequest)
 
-    val nextTuesday = LocalDate.now().with(TemporalAdjusters.next(TUESDAY)).atStartOfDay(ZoneOffset.UTC)
-    val nextTuesdayString = nextTuesday.format(ISO_LOCAL_DATE_TIME)
-    val response = httpClient(listSessionsRequest.with(listSessionsLens of ListSessions(nextTuesdayString, footballGUID)))
+    val dayToBook = LocalDate.now().with(TemporalAdjusters.next(THURSDAY)).atStartOfDay(ZoneOffset.UTC)
+    val dayToBookAsString = dayToBook.format(ISO_LOCAL_DATE_TIME)
+    val response = httpClient(listSessionsRequest.with(listSessionsLens of ListSessions(dayToBookAsString, footballGUID)))
 
     val bookingSessions = bookingSessionsLens.extract(response)
     val session = bookingSessions.findSlot().printed()
