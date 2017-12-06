@@ -77,9 +77,9 @@ fun main(args: Array<String>) {
     val addBookingPageRequest = Request(GET, "/tools/commercial/muga/addsinglebooking.aspx")
     httpClient(addBookingPageRequest)
 
-    val nextThursday = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.THURSDAY))
+    val nextTuesday = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.TUESDAY))
 
-    val nextThursdayString = nextThursday.atStartOfDay(ZoneId.of("UTC")).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+    val nextThursdayString = nextTuesday.atStartOfDay(ZoneId.of("UTC")).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
 
     val footballGUID = "50ba1b7a-67f4-4c8d-a575-7dc8b5a43a30"
     val listSessionsRequest = Request(POST, "/Services/Commercial/api/muga/ListAvailableSessions.json")
