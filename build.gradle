@@ -1,20 +1,16 @@
 buildscript {
+	ext.kotlinVersion = "1.1.60"
     repositories {
         jcenter()
         mavenCentral()
     }
     dependencies {
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.1.4-2"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}"
     }
 }
 apply plugin: "kotlin"
 apply plugin: "application"
 
-kotlin {
-    experimental {
-        coroutines "enable"
-    }
-}
 repositories {
     jcenter()
     mavenCentral()
@@ -24,11 +20,19 @@ group = "org.footballbooking"
 version = "0.0-SNAPSHOT"
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
-def http4kVersion = "2.29.1"
+kotlin.experimental.coroutines "enable"
+compileKotlin {
+	kotlinOptions {
+		apiVersion = "1.1"
+		languageVersion = "1.1"
+		jvmTarget = "1.8"
+	}
+}
+
+def http4kVersion = "3.3.0"
 
 dependencies {
-    compile "org.jetbrains.kotlin:kotlin-stdlib:1.1.4"
-    compile "com.thoughtworks.xstream:xstream:1.4.9"
+    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
     compile "org.http4k:http4k-core:$http4kVersion"
     compile "org.http4k:http4k-server-jetty:$http4kVersion"
     compile "org.http4k:http4k-client-apache:$http4kVersion"
