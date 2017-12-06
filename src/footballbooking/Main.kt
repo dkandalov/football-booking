@@ -14,8 +14,12 @@ import org.http4k.filter.cookie.CookieStorage
 import org.http4k.filter.cookie.LocalCookie
 import org.http4k.format.Gson.auto
 import org.http4k.traffic.ReadWriteCache
-import java.time.*
-import java.time.format.DateTimeFormatter
+import java.time.Clock
+import java.time.DayOfWeek.TUESDAY
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME
 import java.time.temporal.TemporalAdjusters
 
 data class Login(val Email: String, val Password: String, val PersistCookie: Boolean = true)
@@ -38,6 +42,20 @@ data class Slot(
     fun book(guid: String) = BookSlot(guid, Guid, StartDateTime)
 }
 
+val homePageRequest = Request(GET, "/")
+val loginPageRequest = Request(GET, "/Accounts/Login.aspx")
+val signInRequest = Request(POST, "/Services/Commercial/api/security/validatelogin.json")
+val addBookingPageRequest = Request(GET, "/tools/commercial/muga/addsinglebooking.aspx")
+val listSessionsRequest = Request(POST, "/Services/Commercial/api/muga/ListAvailableSessions.json")
+val bookSessionRequest = Request(POST, "/Services/Commercial/api/muga/AddBooking.json")
+
+val loginLens = Body.auto<Login>().toLens()
+val listSessionsLens = Body.auto<ListSessions>().toLens()
+val bookingSessionsLens = Body.auto<BookingSessions>().toLens()
+val bookSlotLens = Body.auto<BookSlot>().toLens()
+
+val footballGUID = "50ba1b7a-67f4-4c8d-a575-7dc8b5a43a30"
+
 
 fun main(args: Array<String>) {
     // home page: https://hsp.kingscross.co.uk
@@ -53,46 +71,26 @@ fun main(args: Array<String>) {
             .then(httpHandler)
     }
 
-    val httpClient: HttpHandler =
+    val httpClient =
         ClientFilters.SetHostFrom(Uri.of("https://hsp.kingscross.co.uk"))
             .then(Cookies())
             .then(DebuggingFilters.PrintRequestAndResponse())
             .then(ApacheClient())
 
-    val homePageRequest = Request(GET, "/")
     httpClient(homePageRequest)
-
-    val loginPageRequest = Request(GET, "/Accounts/Login.aspx")
     httpClient(loginPageRequest)
-
-    val loginLens = Body.auto<Login>().toLens()
-    val listSessionsLens = Body.auto<ListSessions>().toLens()
-    val bookingSessionsLens = Body.auto<BookingSessions>().toLens()
-    val bookSlotLens = Body.auto<BookSlot>().toLens()
-
-    val signInRequest = Request(POST, "/Services/Commercial/api/security/validatelogin.json")
-        .with(loginLens of Login(System.getenv("EMAIL"), System.getenv("PASSWORD")))
-    httpClient(signInRequest)
-
-    val addBookingPageRequest = Request(GET, "/tools/commercial/muga/addsinglebooking.aspx")
+    httpClient(signInRequest.with(loginLens of Login(System.getenv("EMAIL"), System.getenv("PASSWORD"))))
     httpClient(addBookingPageRequest)
 
-    val nextTuesday = LocalDate.now().with(TemporalAdjusters.next(DayOfWeek.TUESDAY))
-
-    val nextThursdayString = nextTuesday.atStartOfDay(ZoneId.of("UTC")).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-
-    val footballGUID = "50ba1b7a-67f4-4c8d-a575-7dc8b5a43a30"
-    val listSessionsRequest = Request(POST, "/Services/Commercial/api/muga/ListAvailableSessions.json")
-        .with(listSessionsLens of ListSessions(nextThursdayString, footballGUID))
-    val response = httpClient(listSessionsRequest)
+    val nextTuesday = LocalDate.now().with(TemporalAdjusters.next(TUESDAY)).atStartOfDay(ZoneOffset.UTC)
+    val nextTuesdayString = nextTuesday.format(ISO_LOCAL_DATE_TIME)
+    val response = httpClient(listSessionsRequest.with(listSessionsLens of ListSessions(nextTuesdayString, footballGUID)))
 
     val bookingSessions = bookingSessionsLens.extract(response)
     val session = bookingSessions.findSlot().printed()
     session ?: error("no session")
 
-    val bookSessionRequest = Request(POST, "/Services/Commercial/api/muga/AddBooking.json")
-        .with(bookSlotLens of session.book(footballGUID))
-    httpClient(bookSessionRequest).printed()
+    httpClient(bookSessionRequest.with(bookSlotLens of session.book(footballGUID))).printed()
 
     // replied with
     // {"Code":200,"Data":{"Guid":"65295e82-1373-43eb-bda3-31e0ac8e6635"}}
